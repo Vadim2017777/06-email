@@ -27,6 +27,7 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
+    "@sendgrid/mail": "^7.2.6",
     "avatar-generator": "^2.0.4",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^8.5.1",

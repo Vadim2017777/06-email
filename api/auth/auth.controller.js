@@ -2,7 +2,11 @@ const userModel = require("../user/user.model");
 const { usersValadation } = require("../user/users.validation");
 const bcrypjs = require("bcryptjs");
 var jwt = require("jsonwebtoken");
+const uuid = require("uuid");
+const UserModel = require("../user/user.model");
 const { generateAvatar } = require("../helpers/avatarGenerator");
+const { sendEmail } = require("../helpers/sendEmail");
+const { find } = require("../user/user.model");
 
 class UserAuthController {
   constructor() {
@@ -30,12 +34,14 @@ class UserAuthController {
 
       const passwordHash = await bcrypjs.hash(password, this._costFactor);
 
-      const contact = await userModel.create({
+      const user = await userModel.create({
         email,
         password: passwordHash,
         subscription,
         avatarURL: await generateAvatar(),
       });
+
+      await this.sendVarificationEmail(user);
 
       return res.status(201).json({
         email,
@@ -56,8 +62,8 @@ class UserAuthController {
       }
       const user = await userModel.findOne({ email });
 
-      if (!user) {
-        res.status(404).send("Email or password is wrong");
+      if (!user || user.status !== "Varifited") {
+        res.status(404).send("Authentication faild");
         return;
       }
       const isPasswordValid = await bcrypjs.compare(password, user.password);
@@ -106,6 +112,46 @@ class UserAuthController {
         }
       );
       return res.status(204).send();
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  }
+
+  async sendVarificationEmail(user) {
+    try {
+      const updateUserWhithVerificationToken = await userModel.findByIdAndUpdate(
+        user._id,
+        {
+          verificationToken: uuid.v4(),
+        },
+        {
+          new: true,
+        }
+      );
+      sendEmail(updateUserWhithVerificationToken);
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  }
+
+  async verifyEmail(req, res, next) {
+    try {
+      const { verificationToken } = req.params;
+      const userToVerify = await userModel.findOne({ verificationToken });
+      if (!userToVerify) {
+        return res.status(404).send("User not found");
+      }
+      const verifitedUser = await userModel.findByIdAndUpdate(
+        userToVerify._id,
+        {
+          status: "Varifited",
+          verificationToken: null,
+        },
+        {
+          new: true,
+        }
+      );
+      return res.status(200).json(verifitedUser);
     } catch (err) {
       res.status(500).send(err.message);
     }
