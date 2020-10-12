@@ -1,12 +1,10 @@
-const userModel = require("../user/user.model");
-const { usersValadation } = require("../user/users.validation");
 const bcrypjs = require("bcryptjs");
 var jwt = require("jsonwebtoken");
 const uuid = require("uuid");
-const UserModel = require("../user/user.model");
+const userModel = require("../user/user.model");
+const { usersValadation } = require("../user/users.validation");
 const { generateAvatar } = require("../helpers/avatarGenerator");
 const { sendEmail } = require("../helpers/sendEmail");
-const { find } = require("../user/user.model");
 
 class UserAuthController {
   constructor() {
